@@ -450,6 +450,44 @@ class C2fAttn(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv((3 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+
+        self.attn = MaxSigmoidAttnBlock(self.c, self.c, gc=gc, ec=ec, nh=nh)
+
+    def forward(self, x, guide):
+        """Forward pass through C2f layer."""
+        y = list(self.cv1(x).chunk(2, 1))
+        y.extend(m(y[-1]) for m in self.m)
+        y.append(self.attn(y[-1], guide))
+        return self.cv2(torch.cat(y, 1))
+
+    def forward_split(self, x, guide):
+        """Forward pass using split() instead of chunk()."""
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        y.append(self.attn(y[-1], guide))
+        return self.cv2(torch.cat(y, 1))
+
+class C2fCIB(C2f):
+    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
+    # 将原始bottleblock替换为CIB
+    def __init__(self, c1, c2, n=1, shortcut=False, lk=False, g=1, e=0.5): # 这里为了节省直接继承C2f。其实没必要传g
+        """Initialize CSP bottleneck layer with two convolutions with arguments ch_in, ch_out, number, shortcut, groups,
+        expansion.
+        """
+        super().__init__(c1, c2, n, shortcut, g, e)  # 简化bottle下游推理器
+        self.m = nn.ModuleList(CIB(self.c, self.c, shortcut, e=1.0, lk=lk) for _ in range(n))
+
+class C2fCIBAttn(nn.Module):
+    def __init__(self, c1, c2, n=1, ec=128, nh=1, gc=512, shortcut=False, lk=False, e=0.5):
+        """Initialize CSP bottleneck layer with two convolutions with arguments ch_in, ch_out, number, shortcut, groups,
+        expansion.
+        """
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((3 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(CIB(self.c, self.c, shortcut, e=1.0, lk=lk) for _ in range(n))
+
         self.attn = MaxSigmoidAttnBlock(self.c, self.c, gc=gc, ec=ec, nh=nh)
 
     def forward(self, x, guide):
@@ -757,15 +795,6 @@ class CIB(nn.Module):
         """'forward()' applies the YOLO FPN to input data."""
         return x + self.cv1(x) if self.add else self.cv1(x)
 
-class C2fCIB(C2f):
-    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
-
-    def __init__(self, c1, c2, n=1, shortcut=False, lk=False, g=1, e=0.5):
-        """Initialize CSP bottleneck layer with two convolutions with arguments ch_in, ch_out, number, shortcut, groups,
-        expansion.
-        """
-        super().__init__(c1, c2, n, shortcut, g, e)
-        self.m = nn.ModuleList(CIB(self.c, self.c, shortcut, e=1.0, lk=lk) for _ in range(n))
 
 
 class Attention(nn.Module):

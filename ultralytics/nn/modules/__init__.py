@@ -49,7 +49,7 @@ from .block import (
     PSA,
     C2fCIB,
     SCDown,
-    RepVGGDW
+    RepVGGDW, C2fCIBAttn
 )
 from .conv import (
     CBAM,
@@ -141,6 +141,7 @@ __all__ = (
     "Silence",
     "PSA",
     "C2fCIB",
+    "C2fCIBAttn",  # v10-world
     "SCDown",
     "RepVGGDW",
     "v10Detect"
