@@ -4,7 +4,7 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
 # 加载模型
-model = YOLO("yolov10s.pt")
+model = YOLO("ultralytics/weights/yolov10s.pt")
 names = model.names
 
 # 图片文件路径

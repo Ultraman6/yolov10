@@ -27,7 +27,7 @@ from ultralytics.utils import (
     WINDOWS,
     Retry,
     checks,
-    is_dir_writeable,
+    is_dir_writeable, WEIGHTS,
 )
 from ultralytics.utils.downloads import download
 from ultralytics.utils.torch_utils import TORCH_1_9, TORCH_1_13
@@ -640,18 +640,19 @@ def test_model_embeddings():
 
 @pytest.mark.skipif(checks.IS_PYTHON_3_12, reason="YOLOWorld with CLIP is not supported in Python 3.12")
 def test_yolo_world():
-    model = YOLO("yolov8s-world.pt")  # no YOLOv8n-world model yet
+    model = YOLO(WEIGHTS / "yolov8s-world.pt")  # no YOLOv8n-world model yet
     model.set_classes(["tree", "window"])
-    model(ASSETS / "bus.jpg", conf=0.01)
+    results = model(ASSETS / "bus.jpg", conf=0.01)
+    results[0].show()
 
 @pytest.mark.skipif(checks.IS_PYTHON_3_12, reason="none")
 def test_yolo_v10():
-    model = YOLO("yolov10n.pt")  # no YOLOv8n-world model yet
-    model.set_classes(["tree", "window"])
-    model(ASSETS / "bus.jpg", conf=0.01)
+    model = YOLO(WEIGHTS / "yolov10n.pt")
+    results = model(ASSETS / "bus.jpg")
+    results[0].show()
 
 @pytest.mark.skipif(checks.IS_PYTHON_3_12, reason="none")
 def test_yolo_world_v10():
-    model = YOLO("yolov8s-world.pt")  # no YOLOv8n-world model yet
+    model = YOLO(WEIGHTS / "yolov8s-world.pt")  # no YOLOv8n-world model yet
     model.set_classes(["tree", "window"])
     model(ASSETS / "bus.jpg", conf=0.01)
