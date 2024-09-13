@@ -303,7 +303,7 @@ class DetectionModel(BaseModel):
             m.inplace = self.inplace
             forward = lambda x: self.forward(x)[0] if isinstance(m, (Segment, Pose, OBB)) else self.forward(x)
             if isinstance(m, v10Detect):
-                forward = lambda x: self.forward(x)["one2many"]
+                forward = lambda x: self.forward(x)["one2many"] # yolov10 outputs
             m.stride = torch.tensor([s / x.shape[-2] for x in forward(torch.zeros(1, ch, s, s))])  # forward
             self.stride = m.stride
             m.bias_init()  # only run once
@@ -640,6 +640,14 @@ class WorldModel(DetectionModel):
                 if m.i == max(embed):
                     return torch.unbind(torch.cat(embeddings, 1), dim=0)
         return x
+
+class Worldv10Model(WorldModel):
+    def __init__(self, cfg="yolov10n-world.yaml", ch=3, nc=None, verbose=True):
+        """Initialize YOLOv8 world model with given config and parameters."""
+        super().__init__(cfg=cfg, ch=ch, nc=nc, verbose=verbose)
+    def init_criterion(self):
+        return v10DetectLoss(self)
+
 
 class YOLOv10DetectionModel(DetectionModel):
     def init_criterion(self):

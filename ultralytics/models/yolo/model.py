@@ -4,7 +4,9 @@ from pathlib import Path
 
 from ultralytics.engine.model import Model
 from ultralytics.models import yolo
-from ultralytics.nn.tasks import ClassificationModel, DetectionModel, OBBModel, PoseModel, SegmentationModel, WorldModel
+from ultralytics.models.yolo.detect import YOLOv10DetectionTrainer, YOLOv10DetectionValidator, YOLOv10DetectionPredictor
+from ultralytics.nn.tasks import ClassificationModel, DetectionModel, OBBModel, PoseModel, SegmentationModel, \
+    WorldModel, YOLOv10DetectionModel, Worldv10Model
 from ultralytics.utils import yaml_load, ROOT
 
 
@@ -14,11 +16,17 @@ class YOLO(Model):
     def __init__(self, model="yolov8n.pt", task=None, verbose=False):
         """Initialize YOLO model, switching to YOLOWorld if model filename contains '-world'."""
         path = Path(model)
-        if "-world" in path.stem and path.suffix in {".pt", ".yaml", ".yml"}:  # if YOLOWorld PyTorch model
+        world_flag = "-world" in path.stem and path.suffix in {".pt", ".yaml", ".yml"}
+        v10_flag = "yolov10" in path.stem
+        if world_flag and v10_flag:  # if YOLOWorld PyTorch model
+            new_instance = YOLOv10World(path)
+            self.__class__ = type(new_instance)
+            self.__dict__ = new_instance.__dict__
+        elif world_flag:  # if YOLOWorld PyTorch model
             new_instance = YOLOWorld(path)
             self.__class__ = type(new_instance)
             self.__dict__ = new_instance.__dict__
-        elif "yolov10" in path.stem:
+        elif v10_flag:
             from ultralytics import YOLOv10
             new_instance = YOLOv10(path)
             self.__class__ = type(new_instance)
@@ -37,7 +45,7 @@ class YOLO(Model):
                 "validator": yolo.classify.ClassificationValidator,
                 "predictor": yolo.classify.ClassificationPredictor,
             },
-            "detect": {
+            "detect": { # one2many用在模型主体
                 "model": DetectionModel,
                 "trainer": yolo.detect.DetectionTrainer,
                 "validator": yolo.detect.DetectionValidator,
@@ -109,3 +117,68 @@ class YOLOWorld(Model):
         # self.predictor = None  # reset predictor otherwise old names remain
         if self.predictor:
             self.predictor.model.names = classes
+
+class YOLOv10World(Model):
+    """YOLO-World object detection model."""
+
+    def __init__(self, model="yolov10n-world.pt") -> None:
+        """
+        Initializes the YOLOv8-World model with the given pre-trained model file. Supports *.pt and *.yaml formats.
+
+        Args:
+            model (str | Path): Path to the pre-trained model. Defaults to 'yolov8s-world.pt'.
+        """
+        super().__init__(model=model, task="detect")
+
+        # Assign default COCO class names when there are no custom names
+        if not hasattr(self.model, "names"):
+            self.model.names = yaml_load(ROOT / "cfg/datasets/coco8.yaml").get("names")
+
+    @property
+    def task_map(self):
+        """Map head to model, validator, and predictor classes."""
+        return {
+            "detect": {
+                "model": Worldv10Model,
+                "trainer": YOLOv10DetectionTrainer,
+                "validator": yolo.detect.DetectionValidator,
+                "predictor": yolo.detect.DetectionPredictor,
+            }
+        }
+
+    def set_classes(self, classes):
+        """
+        Set classes.
+
+        Args:
+            classes (List(str)): A list of categories i.e ["person"].
+        """
+        self.model.set_classes(classes)
+        # Remove background if it's given
+        background = " "
+        if background in classes:
+            classes.remove(background)
+        self.model.names = classes
+
+        # Reset method class names
+        # self.predictor = None  # reset predictor otherwise old names remain
+        if self.predictor:
+            self.predictor.model.names = classes
+
+
+class YOLOv10(Model):
+
+    def __init__(self, model="yolov10n.pt", task=None, verbose=False):
+        super().__init__(model=model, task=task, verbose=verbose)
+
+    @property
+    def task_map(self):
+        """Map head to model, trainer, validator, and predictor classes."""
+        return {
+            "detect": {
+                "model": YOLOv10DetectionModel,
+                "trainer": YOLOv10DetectionTrainer,
+                "validator": YOLOv10DetectionValidator,
+                "predictor": YOLOv10DetectionPredictor,
+            },
+        }

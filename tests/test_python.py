@@ -643,3 +643,15 @@ def test_yolo_world():
     model = YOLO("yolov8s-world.pt")  # no YOLOv8n-world model yet
     model.set_classes(["tree", "window"])
     model(ASSETS / "bus.jpg", conf=0.01)
+
+@pytest.mark.skipif(checks.IS_PYTHON_3_12, reason="none")
+def test_yolo_v10():
+    model = YOLO("yolov10n.pt")  # no YOLOv8n-world model yet
+    model.set_classes(["tree", "window"])
+    model(ASSETS / "bus.jpg", conf=0.01)
+
+@pytest.mark.skipif(checks.IS_PYTHON_3_12, reason="none")
+def test_yolo_world_v10():
+    model = YOLO("yolov8s-world.pt")  # no YOLOv8n-world model yet
+    model.set_classes(["tree", "window"])
+    model(ASSETS / "bus.jpg", conf=0.01)
