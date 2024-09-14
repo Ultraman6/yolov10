@@ -656,3 +656,4 @@ def test_yolo_world_v10():
     model = YOLO(WEIGHTS / "yolov8s-world.pt")  # no YOLOv8n-world model yet
     model.set_classes(["tree", "window"])
     model(ASSETS / "bus.jpg", conf=0.01)
+

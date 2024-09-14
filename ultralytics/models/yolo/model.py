@@ -89,7 +89,7 @@ class YOLOWorld(Model):
             self.model.names = yaml_load(ROOT / "cfg/datasets/coco8.yaml").get("names")
 
     @property
-    def task_map(self):
+    def task_map(self):  # 官方没有预留训练接口
         """Map head to model, validator, and predictor classes."""
         return {
             "detect": {

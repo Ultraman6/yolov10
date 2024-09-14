@@ -221,7 +221,7 @@ class Model(nn.Module):
         Args:
             weights (str): model checkpoint to be loaded
             task (str | None): model task
-        """
+        """ # 在线读取文件
         if weights.lower().startswith(("https://", "http://", "rtsp://", "rtmp://", "tcp://")):
             weights = checks.check_file(weights)  # automatically download and return local filename
         weights = checks.check_model_file_from_stem(weights)  # add suffix, i.e. yolov8n -> yolov8n.pt

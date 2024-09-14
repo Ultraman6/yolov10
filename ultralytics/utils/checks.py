@@ -474,7 +474,7 @@ def check_model_file_from_stem(model="yolov8n"):
     else:
         return model
 
-
+# 读取文件、返回对象
 def check_file(file, suffix="", download=True, hard=True):
     """Search/download file (if necessary) and return path."""
     check_suffix(file, suffix)  # optional
